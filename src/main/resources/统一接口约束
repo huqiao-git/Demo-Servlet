@@ -1,0 +1,16 @@
+请求:
+data:{
+	"COMMON_CODE": "请求码",
+	"COMMON_PARAM": {
+		"参数名1": "参数值1",
+		"参数名2": "参数值2"
+	},
+	"COMMON_TICKET": "登录票据"
+}
+
+响应:
+{
+	"COMMON_DATA": "响应参数",
+	"COMMON_ERR_ID": 错误码,
+	"COMMON_ERR_MSG": 错误消息
+}
