@@ -7,7 +7,7 @@ import java.lang.reflect.Method;
 /**
  * CMD分发缓存结构体
  */
-public class CmdMapping implements Mapping{
+public class CmdMapping implements Mapping {
 
     private CmdMapper cmdMapper;
 
@@ -37,7 +37,8 @@ public class CmdMapping implements Mapping{
     public Method getMethod() {
         try {
             return this.getBean().getClass().getMethod(this.methodName, paramterTypes);
-        } catch (NoSuchMethodException ignored) { }
+        } catch (NoSuchMethodException ignored) {
+        }
         return null;
     }
 

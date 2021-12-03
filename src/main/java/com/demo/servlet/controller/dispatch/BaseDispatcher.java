@@ -54,7 +54,7 @@ public class BaseDispatcher {
 
     private boolean isActionMethod(Method m) {
         CmdMapper cmdMapper = AnnotationUtils.findAnnotation(m, CmdMapper.class);
-        if (cmdMapper == null || cmdMapper.value() == 0 || Modifier.isStatic(m.getModifiers())) {
+        if (cmdMapper == null || Modifier.isStatic(m.getModifiers())) {
             return false;
         }
         Class<?>[] argTypes = m.getParameterTypes();

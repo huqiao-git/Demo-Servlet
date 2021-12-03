@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 
@@ -34,12 +35,12 @@ public class I18n {
     }
 
     public static String getMsg(String key) {
-        if(key == null) {
+        if (key == null) {
             return "";
         }
         try {
             ResourceBundle rb = getResourceBundle(key);
-            if(rb == null) {
+            if (rb == null) {
                 return "";
             }
             String sMsg = String.valueOf(rb.getObject(key));
@@ -47,7 +48,7 @@ public class I18n {
                 return "";
             }
             return sMsg;
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             return "";
         }
     }
@@ -63,15 +64,15 @@ public class I18n {
     }
 
     public static String i18Translate(Integer code, String defaultMessage, Map<String, Object> paraMap) {
-        if(defaultMessage == null) {
+        if (defaultMessage == null) {
             defaultMessage = "";
         }
-        if(code == null) {
+        if (code == null) {
             return defaultMessage;
         }
         String i18Code = I18n.getMsg(String.valueOf(code));
         String msg = StrSubstitutor.replace(i18Code, paraMap);
-        if(StringUtils.isBlank(msg)) {
+        if (StringUtils.isBlank(msg)) {
             msg = defaultMessage;
         }
         return msg;

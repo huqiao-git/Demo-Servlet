@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@Import(ServletConfig.class )
+@Import(ServletConfig.class)
 public class ServletApplication {
 
     public static void main(String[] args) {

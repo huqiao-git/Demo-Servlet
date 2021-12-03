@@ -12,6 +12,7 @@ import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -34,6 +35,7 @@ public class BaseServlet extends HttpServlet {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private BaseDispatcher baseDispatcher;
+
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
@@ -50,51 +52,69 @@ public class BaseServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) { process(request, response); }
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+        process(request, response);
+    }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) { process(request, response); }
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+        process(request, response);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest request, HttpServletResponse response) {
+        process(request, response);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) {
+        process(request, response);
+    }
 
     private void process(HttpServletRequest request, HttpServletResponse response) {
         response.setCharacterEncoding("utf-8");
         String data = request.getParameter("data");
-        BaseRequestData requestData = JSON.parseObject(data, BaseRequestData.class);
-        logger.info("请求接口协议编号 ---> : [ " + requestData.getCOMMON_CODE() + " ]");
-        logger.info("请求参数 --->: \n" + data);
+        BaseRequestMo requestMo = JSON.parseObject(data, BaseRequestMo.class);
+        logger.info("请求接口协议编号 ---> : [ {} ]", requestMo.getCode());
+        logger.info("请求参数 --->: \n{}", data);
 
-        BaseResponseData responseDara = new BaseResponseData();
-        //TODO 类分发
+        BaseResponseVo responseVo = new BaseResponseVo();
+
+        /* 分发处理 */
         Object resultObj = null;
         try {
-            BaseCmd cmd = (BaseCmd) SpringContextHelper.getBean("CMD" + requestData.getCOMMON_CODE());
-            resultObj = cmd.baseExecute(requestData);
-        } catch (I18nException e) {
-            responseDara.setCOMMON_ERR_ID(e.getExcCode());
-            responseDara.setCOMMON_ERR_MSG(e.getCause().getMessage());
-        } catch (Exception e) {
-            responseDara.setCOMMON_ERR_ID(1);
-            responseDara.setCOMMON_ERR_MSG("无此接口编号");
-        }
-        //TODO 注解分发
-        Object resultObj2 = null;
-        try {
-            Mapping mapping = baseDispatcher.getMapping(requestData);
-            Method m = mapping.getMethod();
-            resultObj2 = m.invoke(mapping.getBean(), requestData);
-        } catch (InvocationTargetException e) {
-            if (e.getTargetException() instanceof I18nException) {
-                responseDara.setCOMMON_ERR_ID(((I18nException) e.getTargetException()).getExcCode());
-                responseDara.setCOMMON_ERR_MSG(e.getCause().getMessage());
-            } else {
-                responseDara.setCOMMON_ERR_ID(2);
-                responseDara.setCOMMON_ERR_MSG("无此接口编号2");
+            //checkLogin(request, requestMo.getCode());  //登录检查
+            CmdMapper mapper = baseDispatcher.getMapper(requestMo);
+            if (mapper == null) {  //类名分发 (不支持 / - 符号)
+                BaseCmd cmd = (BaseCmd) SpringHelper.getBean("CMD" + requestMo.getCode());
+                resultObj = cmd.baseExecute(requestMo);
+            } else {  //注解分发
+                Method m = mapper.getMethod();
+                Class<?>[] clazzs = m.getParameterTypes();
+                Object[] values = new Object[clazzs.length];
+                for (int i = 0; i < clazzs.length; i++) {
+                    Class<?> clazz = clazzs[i];
+                    if (clazz == HttpServletRequest.class) {
+                        values[i] = request;
+                    } else if (clazz == HttpServletResponse.class) {
+                        values[i] = response;
+                    } else if (clazz == BaseRequestMo.class) {
+                        values[i] = requestMo;
+                    } else {
+                        values[i] = JsonUtil.toObjBean(requestMo.getData(), clazz);
+                    }
+                }
+                resultObj = m.invoke(mapper.getBean(), values);
             }
+        } catch (NoSuchBeanDefinitionException e) {
+            responseVo.setCode(-1);
+            responseVo.setMessage("无此接口编号");
         } catch (I18nException e) {
-            responseDara.setCOMMON_ERR_ID(e.getExcCode());
-            responseDara.setCOMMON_ERR_MSG(e.getCause().getMessage());
+            responseVo.setCode(e.getExcCode());
+            responseVo.setMessage(e.getMessage());
         } catch (Exception e) {
-            responseDara.setCOMMON_ERR_ID(2);
-            responseDara.setCOMMON_ERR_MSG("无此接口编号2");
+            responseVo.setCode(-9);
+            responseVo.setMessage("接口导致系统错误");
         }
         if (resultObj instanceof HSSFWorkbook) {
             HSSFWorkbook wb = (HSSFWorkbook) resultObj;
@@ -108,16 +128,15 @@ public class BaseServlet extends HttpServlet {
                 response.setContentLength(baos.size());
                 OutputStream out = response.getOutputStream();
                 baos.writeTo(out);
-                logger.info("响应Excel ---> : " + filename);
+                logger.info("响应Excel ---> : {}", filename);
                 out.close();
             } catch (IOException e) {
                 logger.error("无法输出Excel, cause: " + e.getMessage(), e);
             }
         } else {
-            responseDara.setCOMMON_DATA(resultObj);
-            responseDara.setCOMMON_DATA2(resultObj2);
-            String result = JSON.toJSONString(responseDara, SerializerFeature.WriteMapNullValue);
-            logger.info("响应数据 ---> : \n" + result);
+            responseVo.setData(resultObj);
+            String result = JSON.toJSONString(responseVo, SerializerFeature.WriteMapNullValue);
+            logger.info("响应数据 ---> : \n{}", result);
             try {
                 PrintWriter out = response.getWriter();
                 out.print(result);

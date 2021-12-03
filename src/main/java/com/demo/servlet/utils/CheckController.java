@@ -9,7 +9,7 @@ public class CheckController {
         //TODO 检查用户是否登录
     }
 
-    public static void checkAuthority(BaseRequestData bean)throws I18nException {
+    public static void checkAuthority(BaseRequestData bean) throws I18nException {
         // TODO 检查用户权限
     }
 }
